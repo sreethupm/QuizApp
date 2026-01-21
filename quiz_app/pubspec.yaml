@@ -5,15 +5,15 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.7
+  sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
   http: ^1.2.0
   percent_indicator: ^4.2.3
+  audioplayers: ^6.5.1
 
 dev_dependencies:
   flutter_test:
@@ -22,3 +22,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/sounds/click.wav
+    - assets/sounds/correct.wav
+    - assets/sounds/wrong.wav
+    - assets/sounds/welcome.wav

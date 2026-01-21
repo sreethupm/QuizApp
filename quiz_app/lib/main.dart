@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // ✅ important
   runApp(const QuizApp());
 }
 
@@ -14,10 +15,9 @@ class QuizApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Quiz App',
       theme: ThemeData(
-        primaryColor: const Color(0xFF4A6CF7),
-        scaffoldBackgroundColor: const Color(0xFFF3F6FF),
+        useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: const SplashScreen(), // ✅ MUST exist
     );
   }
 }
