@@ -42,6 +42,7 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
+
     loadData();
   }
 
@@ -143,7 +144,8 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
   }
 
   void checkFinish() {
-    if (aIndex >= questions.length - 1 && bIndex >= questions.length - 1) {
+    if (aIndex >= questions.length - 1 &&
+        bIndex >= questions.length - 1) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -247,7 +249,10 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text("Skip", style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text(
+                "Skip",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],
@@ -259,7 +264,8 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
     return AnimatedBuilder(
       animation: _orbController,
       builder: (_, __) {
-        double size = 220 + 40 * sin(_orbController.value * pi * 2).abs();
+        double size =
+            220 + 40 * sin(_orbController.value * pi * 2).abs();
         return Container(
           width: size,
           height: size,
@@ -296,26 +302,28 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
     }
 
     return Scaffold(
-      body: SizedBox.expand(
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF0F2027),
-                Color(0xFF203A43),
-                Color(0xFF2C5364),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF0F2027),
+              Color(0xFF203A43),
+              Color(0xFF2C5364),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              glowingOrb(),
-              Column(
-                children: [
-                  Expanded(
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            glowingOrb(),
+            Column(
+              children: [
+                // 🔄 PLAYER A (rotated)
+                Expanded(
+                  child: Transform.rotate(
+                    angle: pi,
                     child: playerCard(
                       label: "A",
                       accent: Colors.lightBlueAccent,
@@ -326,21 +334,23 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
                       onSkip: skipA,
                     ),
                   ),
-                  Expanded(
-                    child: playerCard(
-                      label: "B",
-                      accent: Colors.tealAccent,
-                      index: bIndex,
-                      timeLeft: bTimeLeft,
-                      selected: bSelected,
-                      onTap: answerB,
-                      onSkip: skipB,
-                    ),
+                ),
+
+                // PLAYER B (normal)
+                Expanded(
+                  child: playerCard(
+                    label: "B",
+                    accent: Colors.tealAccent,
+                    index: bIndex,
+                    timeLeft: bTimeLeft,
+                    selected: bSelected,
+                    onTap: answerB,
+                    onSkip: skipB,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
