@@ -16,8 +16,11 @@ class MultiplayerQuizScreen extends StatefulWidget {
 
 class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
     with SingleTickerProviderStateMixin {
-  List<Question> questions = [];
   bool loading = true;
+
+  // 🔀 Separate shuffled question lists
+  late List<Question> aQuestions;
+  late List<Question> bQuestions;
 
   // Player A
   int aIndex = 0, aCorrect = 0, aWrong = 0;
@@ -47,11 +50,18 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
   }
 
   Future<void> loadData() async {
-    questions = await ApiService.fetchQuestions();
+    final fetched = await ApiService.fetchQuestions();
+
+    // 🔁 SAME QUESTIONS, DIFFERENT ORDER
+    aQuestions = List<Question>.from(fetched)..shuffle();
+    bQuestions = List<Question>.from(fetched)..shuffle();
+
     setState(() => loading = false);
     startATimer();
     startBTimer();
   }
+
+  // ---------------- TIMERS ----------------
 
   void startATimer() {
     aTimer?.cancel();
@@ -71,12 +81,16 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
     });
   }
 
+  // ---------------- ANSWERS ----------------
+
   void answerA(int i, String answer) {
     if (aAnswered) return;
+
     setState(() {
       aSelected = i;
       aAnswered = true;
-      if (answer == questions[aIndex].correctAnswer) {
+
+      if (answer == aQuestions[aIndex].correctAnswer) {
         aCorrect++;
         SoundManager.play('correct.wav');
       } else {
@@ -84,15 +98,18 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
         SoundManager.play('wrong.wav');
       }
     });
+
     Future.delayed(const Duration(milliseconds: 300), moveNextA);
   }
 
   void answerB(int i, String answer) {
     if (bAnswered) return;
+
     setState(() {
       bSelected = i;
       bAnswered = true;
-      if (answer == questions[bIndex].correctAnswer) {
+
+      if (answer == bQuestions[bIndex].correctAnswer) {
         bCorrect++;
         SoundManager.play('correct.wav');
       } else {
@@ -100,8 +117,11 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
         SoundManager.play('wrong.wav');
       }
     });
+
     Future.delayed(const Duration(milliseconds: 300), moveNextB);
   }
+
+  // ---------------- NAVIGATION ----------------
 
   void skipA() {
     aTimer?.cancel();
@@ -115,7 +135,7 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
 
   void moveNextA() {
     aTimer?.cancel();
-    if (aIndex < questions.length - 1) {
+    if (aIndex < aQuestions.length - 1) {
       setState(() {
         aIndex++;
         aSelected = null;
@@ -130,7 +150,7 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
 
   void moveNextB() {
     bTimer?.cancel();
-    if (bIndex < questions.length - 1) {
+    if (bIndex < bQuestions.length - 1) {
       setState(() {
         bIndex++;
         bSelected = null;
@@ -144,8 +164,8 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
   }
 
   void checkFinish() {
-    if (aIndex >= questions.length - 1 &&
-        bIndex >= questions.length - 1) {
+    if (aIndex >= aQuestions.length - 1 &&
+        bIndex >= bQuestions.length - 1) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -158,17 +178,18 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
     }
   }
 
+  // ---------------- UI ----------------
+
   Widget playerCard({
     required String label,
     required Color accent,
+    required Question question,
     required int index,
     required int timeLeft,
     required int? selected,
     required Function(int, String) onTap,
     required VoidCallback onSkip,
   }) {
-    final question = questions[index];
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.all(16),
@@ -197,18 +218,15 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            "Question ${index + 1}/${questions.length}",
+            "Question ${index + 1}",
             style: const TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: timeLeft / 20,
-              backgroundColor: Colors.white24,
-              valueColor: AlwaysStoppedAnimation(accent),
-              minHeight: 8,
-            ),
+          LinearProgressIndicator(
+            value: timeLeft / 20,
+            backgroundColor: Colors.white24,
+            valueColor: AlwaysStoppedAnimation(accent),
+            minHeight: 8,
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -218,42 +236,28 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
                   Text(
                     question.question,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: question.options.asMap().entries.map((entry) {
-                      return OptionTile(
-                        text: entry.value,
-                        isSelected: selected == entry.key,
-                        onTap: () => onTap(entry.key, entry.value),
-                      );
-                    }).toList(),
-                  ),
+                  ...question.options.asMap().entries.map((e) {
+                    return OptionTile(
+                      text: e.value,
+                      isSelected: selected == e.key,
+                      onTap: () => onTap(e.key, e.value),
+                    );
+                  }),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onSkip,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                "Skip",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+          ElevatedButton(
+            onPressed: onSkip,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: Colors.black,
             ),
+            child: const Text("Skip"),
           ),
         ],
       ),
@@ -264,7 +268,7 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
     return AnimatedBuilder(
       animation: _orbController,
       builder: (_, __) {
-        double size =
+        final size =
             220 + 40 * sin(_orbController.value * pi * 2).abs();
         return Container(
           width: size,
@@ -310,8 +314,6 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
               Color(0xFF203A43),
               Color(0xFF2C5364),
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
           ),
         ),
         child: Stack(
@@ -320,13 +322,13 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
             glowingOrb(),
             Column(
               children: [
-                // 🔄 PLAYER A (rotated)
                 Expanded(
                   child: Transform.rotate(
                     angle: pi,
                     child: playerCard(
                       label: "A",
                       accent: Colors.lightBlueAccent,
+                      question: aQuestions[aIndex],
                       index: aIndex,
                       timeLeft: aTimeLeft,
                       selected: aSelected,
@@ -335,12 +337,11 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen>
                     ),
                   ),
                 ),
-
-                // PLAYER B (normal)
                 Expanded(
                   child: playerCard(
                     label: "B",
                     accent: Colors.tealAccent,
+                    question: bQuestions[bIndex],
                     index: bIndex,
                     timeLeft: bTimeLeft,
                     selected: bSelected,

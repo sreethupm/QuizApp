@@ -14,7 +14,8 @@ class QuizScreen extends StatefulWidget {
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateMixin {
+class _QuizScreenState extends State<QuizScreen>
+    with SingleTickerProviderStateMixin {
   List<Question> questions = [];
   bool loading = true;
 
@@ -28,22 +29,14 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   int timeLeft = 20;
   Timer? timer;
 
-  late AnimationController _floatController;
-  final Random _random = Random();
-  final List<IconData> quizIcons = [
-    Icons.menu_book_rounded,
-    Icons.lightbulb_outline,
-    Icons.school_rounded,
-    Icons.psychology_alt_rounded,
-    Icons.help_outline,
-  ];
+  late AnimationController _circleController;
 
   @override
   void initState() {
     super.initState();
     loadQuestions();
 
-    _floatController = AnimationController(
+    _circleController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
@@ -71,7 +64,6 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
   void answerQuestion(int index, String answer) {
     if (answered) return;
-
     timer?.cancel();
 
     setState(() {
@@ -121,28 +113,34 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     timer?.cancel();
-    _floatController.dispose();
+    _circleController.dispose();
     super.dispose();
   }
 
-  Widget floatingIcon(IconData icon) {
-    final double dx = (_random.nextDouble() - 0.5) * 220;
-    final double dy = (_random.nextDouble() - 0.5) * 220;
-    final double size = _random.nextDouble() * 28 + 18;
-
+  /// 🔵 CENTER GLOWING ROUND ANIMATION
+  Widget centerOrb() {
     return AnimatedBuilder(
-      animation: _floatController,
-      builder: (context, child) {
-        final anim = sin(_floatController.value * pi * 2);
-        return Transform.translate(
-          offset: Offset(dx * anim, dy * anim),
-          child: Opacity(
-            opacity: 0.3 + 0.4 * anim.abs(),
-            child: child,
+      animation: _circleController,
+      builder: (context, _) {
+        final glow = sin(_circleController.value * pi * 2).abs();
+        final size = 180 + 30 * glow;
+
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.08),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.tealAccent.withOpacity(0.35),
+                blurRadius: 80,
+                spreadRadius: 30,
+              ),
+            ],
           ),
         );
       },
-      child: Icon(icon, size: size, color: Colors.white70),
     );
   }
 
@@ -173,9 +171,9 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           child: Stack(
             alignment: Alignment.center,
             children: [
-              ...quizIcons.map(floatingIcon),
+              centerOrb(),
 
-              // ❓ Main question card
+              /// MAIN QUESTION CARD
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -183,19 +181,21 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.tealAccent.withOpacity(0.2),
-                        blurRadius: 20,
-                        spreadRadius: 4,
+                        color: Colors.tealAccent.withOpacity(0.25),
+                        blurRadius: 25,
+                        spreadRadius: 5,
                       ),
                     ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Question count
                       Text(
                         "Question ${currentIndex + 1} / ${questions.length}",
                         style: const TextStyle(color: Colors.white70),
@@ -205,7 +205,9 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                         value: timeLeft / 20,
                         minHeight: 8,
                         backgroundColor: Colors.white24,
-                        valueColor: const AlwaysStoppedAnimation(Colors.tealAccent),
+                        valueColor: const AlwaysStoppedAnimation(
+                          Colors.tealAccent,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -218,21 +220,26 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Options
+
+                      /// OPTIONS
                       ...question.options.asMap().entries.map((entry) {
                         return OptionTile(
                           text: entry.value,
                           isSelected: selected == entry.key,
-                          onTap: () => answerQuestion(entry.key, entry.value),
+                          onTap: () =>
+                              answerQuestion(entry.key, entry.value),
                         );
                       }),
+
                       const SizedBox(height: 12),
-                      // Skip button
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.tealAccent,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -240,7 +247,10 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                         onPressed: skipQuestion,
                         child: const Text(
                           "Skip",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
